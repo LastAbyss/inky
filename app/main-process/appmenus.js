@@ -8,10 +8,13 @@ const ProjectWindow = require("./projectWindow.js").ProjectWindow;
 const inkSnippets = require("./inkSnippets.js").snippets;
 const i18n = require('./i18n/i18n.js');
 
+
 function setupMenus(callbacks) {
     let themes = [];
     //Grab the default theme from storage
     const defaultTheme = ProjectWindow.getViewSettings().theme;
+    let zoom = ProjectWindow.getViewSettings().zoom;
+
     for (const theme of ['light', 'dark', 'contrast', 'focus']) {
         themes.push({
             label: theme.substring(0, 1).toUpperCase() + theme.substring(1),
@@ -29,10 +32,16 @@ function setupMenus(callbacks) {
     function computeRecent(newRecentFiles) {
         return newRecentFiles.map((path) => ({
             label: path,
-            click: () => ProjectWindow.open(path)
+            click: () => {
+                var w = ProjectWindow.open(path);
+
+                w.browserWindow.webContents.once('dom-ready', () => {
+                    ProjectWindow.focused().zoom(zoom);
+                });
+            }
         }));
     }
-    
+
     let zoom_percents = [];
     //Grab the default zoom from storage
     const defaultZoom = ProjectWindow.getViewSettings().zoom + '%';
@@ -49,19 +58,19 @@ function setupMenus(callbacks) {
 
     // Generate menus for ink snippets
     const inkSubMenu = [];
-    for(var category of inkSnippets) {
+    for (var category of inkSnippets) {
 
         // Category separator?
-        if( category.separator ) {
+        if (category.separator) {
             inkSubMenu.push({
                 type: 'separator'
             });
             continue;
         }
-        
+
         // Main categories
         var items = category.snippets.map(snippet => {
-            if( snippet.separator ) {
+            if (snippet.separator) {
                 return {
                     type: 'separator'
                 };
@@ -71,9 +80,9 @@ function setupMenus(callbacks) {
                     click: (item, focussedWindow) => callbacks.insertSnippet(focussedWindow, snippet.ink)
                 }
             }
-            
+
         });
-        
+
         inkSubMenu.push({
             label: i18n._(category.categoryName),
             submenu: items
@@ -247,9 +256,9 @@ function setupMenus(callbacks) {
                     click: callbacks.toggleTags
                 },
                 {
-                        label: i18n._('Word count and more'),
-                        enabled: callbacks.isFocusedWindow,
-                        click: callbacks.stats
+                    label: i18n._('Word count and more'),
+                    enabled: callbacks.isFocusedWindow,
+                    click: callbacks.stats
                 }
             ]
         },
@@ -257,7 +266,7 @@ function setupMenus(callbacks) {
             label: i18n._('Ink'),
             submenu: inkSubMenu
         },
-        
+
         {
             label: i18n._('Window'),
             role: 'window',
@@ -286,7 +295,7 @@ function setupMenus(callbacks) {
                                     title: i18n._('Reload?'),
                                     message: i18n._('Are you sure you want to reload the current window? Any unsaved changes will be lost.')
                                 });
-                                if( clickedButtonIdx == 0 ) {
+                                if (clickedButtonIdx == 0) {
                                     focusedWindow.reload();
                                 }
                             }
@@ -358,7 +367,9 @@ function setupMenus(callbacks) {
                 {
                     label: i18n._('Quit'),
                     accelerator: 'Command+Q',
-                    click() { app.quit(); }
+                    click() {
+                        app.quit();
+                    }
                 },
             ]
         });
@@ -373,9 +384,7 @@ function setupMenus(callbacks) {
                 role: 'front'
             }
         );
-    }
-    else
-    {
+    } else {
         // Windows specific menu items
         template.find(x => x.role === 'help').submenu.push(
             {
@@ -388,7 +397,7 @@ function setupMenus(callbacks) {
     const menu = Menu.buildFromTemplate(template);
     Menu.setApplicationMenu(menu);
 
-    ProjectWindow.setRecentFilesChanged(function(newRecentFiles) {
+    ProjectWindow.setRecentFilesChanged(function (newRecentFiles) {
         _.find(
             _.find(template, menu => menu.label == i18n._("File")).submenu,
             submenu => submenu.id == "recent"

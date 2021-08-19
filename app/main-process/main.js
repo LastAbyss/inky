@@ -55,14 +55,22 @@ app.on('ready', function () {
 
     appmenus.setupMenus({
         new: () => {
-            ProjectWindow.createEmpty();
+            var w = ProjectWindow.createEmpty();
+            //Setup last stored zoom
+            w.browserWindow.webContents.once('dom-ready', () => {
+                ProjectWindow.focused().zoom(zoom);
+            });
         },
         newInclude: () => {
             var win = ProjectWindow.focused();
             if (win) win.newInclude();
         },
         open: () => {
-            ProjectWindow.open();
+            var w = ProjectWindow.open();
+            //Setup last stored zoom
+            w.browserWindow.webContents.once('dom-ready', () => {
+                ProjectWindow.focused().zoom(zoom);
+            });
         },
         save: () => {
             var win = ProjectWindow.focused();
@@ -73,12 +81,12 @@ app.on('ready', function () {
             if (win) win.exportJson();
         },
         exportForWeb: () => {
-            if( inkJSNeedsUpdating() ) return;
+            if (inkJSNeedsUpdating()) return;
             var win = ProjectWindow.focused();
             if (win) win.exportForWeb();
         },
         exportJSOnly: () => {
-            if( inkJSNeedsUpdating() ) return;
+            if (inkJSNeedsUpdating()) return;
             var win = ProjectWindow.focused();
             if (win) win.exportJSOnly();
         },
@@ -109,44 +117,45 @@ app.on('ready', function () {
             if (win) win.stats();
         },
         zoomIn: () => {
-          var win = ProjectWindow.focused();
-          if (win != null) {
-            win.zoom(2);
-            //Convert change from font size to zoom percentage
-            zoom = (parseInt(zoom) + Math.floor(2*100/12)).toString();
-            ProjectWindow.addOrChangeViewSetting('zoom', zoom);
-          }
+            var win = ProjectWindow.focused();
+            if (win != null) {
+                win.zoom(2);
+                //Convert change from font size to zoom percentage
+                zoom = (parseInt(zoom) + Math.floor(2 * 100 / 12)).toString();
+                ProjectWindow.addOrChangeViewSetting('zoom', zoom);
+            }
         },
         zoomOut: () => {
-          var win = ProjectWindow.focused();
-          if (win != null) {
-            win.zoom(-2);
-            //Convert change from font size to zoom percentage
-            zoom = (parseInt(zoom) - Math.floor(2*100/12)).toString();
-            ProjectWindow.addOrChangeViewSetting('zoom', zoom);
-          }
+            var win = ProjectWindow.focused();
+            if (win != null) {
+                win.zoom(-2);
+                //Convert change from font size to zoom percentage
+                zoom = (parseInt(zoom) - Math.floor(2 * 100 / 12)).toString();
+                ProjectWindow.addOrChangeViewSetting('zoom', zoom);
+            }
         },
         zoom: (zoom_percent) => {
-          var win = ProjectWindow.focused();
-          if (win != null) {
-            win.zoom(zoom_percent);
-            zoom = zoom_percent.toString();
-            ProjectWindow.addOrChangeViewSetting('zoom', zoom)
-          }
+            var win = ProjectWindow.focused();
+            if (win != null) {
+                win.zoom(zoom_percent);
+                zoom = zoom_percent.toString();
+                ProjectWindow.addOrChangeViewSetting('zoom', zoom)
+            }
         },
         insertSnippet: (focussedWindow, snippet) => {
-            if( focussedWindow )
+            if (focussedWindow)
                 focussedWindow.webContents.send('insertSnippet', snippet);
         },
         changeTheme: (newTheme) => {
-          theme = newTheme;
-          AboutWindow.changeTheme(newTheme);
-          DocumentationWindow.changeTheme(newTheme);
-          ProjectWindow.addOrChangeViewSetting('theme', newTheme)
+            theme = newTheme;
+            AboutWindow.changeTheme(newTheme);
+            DocumentationWindow.changeTheme(newTheme);
+            ProjectWindow.addOrChangeViewSetting('theme', newTheme)
         }
     });
 
     let openedSpecificFile = false;
+
     if (process.platform == "win32" && process.argv.length > 1) {
         for (let i = 1; i < process.argv.length; i++) {
             var arg = process.argv[i].toLowerCase();
@@ -155,7 +164,7 @@ app.on('ready', function () {
                 var w = ProjectWindow.open(fileToOpen);
                 openedSpecificFile = true;
                 //Setup last stored zoom
-                if(w) {
+                if (w) {
                     w.browserWindow.webContents.once('dom-ready', () => {
                         ProjectWindow.focused().zoom(zoom);
                     });
@@ -164,6 +173,7 @@ app.on('ready', function () {
             }
         }
     }
+
     if (!openedSpecificFile) {
         var w = ProjectWindow.createEmpty();
         //Setup last stored zoom
